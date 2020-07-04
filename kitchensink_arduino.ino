@@ -215,7 +215,7 @@ void brokerConneect(void)
         snprintf(buffer, sizeof(buffer), "TCP port open \r\n");
         SerialMon.println(buffer);
     }
-    delay(3000);
+    // delay(3000);
     MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
     data.MQTTVersion = 4;
     data.clientID.cstring = (char *)mqttDeviceID;
