@@ -19,7 +19,7 @@ Arduino Companion for The kitchen sink Demo 👉🏿 https://github.com/africast
 
 - Hook up the connectors as shown: 
 
-#### TODO
+#### TODO : Wiring
 
 - Build your application and upload.
 
