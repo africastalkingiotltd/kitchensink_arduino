@@ -13,7 +13,7 @@ Arduino Companion for The kitchen sink Demo 👉🏿 https://github.com/africast
 
 ### Configure
 
-- If you have not deployed yet, deploy the main IoT webhook first. [Read more]() or just go ahead and [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/africastalkingiotltd/kitchensink_web) 
+- If you have not deployed yet, deploy the main IoT webhook first. [Read more](https://github.com/africastalkingiotltd/kitchensink_web) or just go ahead and [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/africastalkingiotltd/kitchensink_web) 
 
 - Update your credentials inside [include/config.h](./include/config.h)
 
