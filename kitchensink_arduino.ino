@@ -52,11 +52,11 @@ const char mqttDeviceID[] = DEVICE_ID;
  * 
  *  birth topic - This is a topic that the device publishes to
  *  when it makes the first MQTT Connection or any other subsequent
- *  connection. It is not enforced but encouraged as a god practice.
+ *  reconnections. It is not enforced but encouraged as a good practice.
  * 
- *  will topic - This is topic that the device should publish to when 
- *  it disconnect. This can be used to detect your device going offline.
- *  It is sent together with the CONNECT payload;just a little FYI!
+ *  will topic - This is a topic that the device should publish to when 
+ *  it disconnects. This can be used to detect your device going offline.
+ *  It is sent together with the CONNECT payload.
  *  Also not enforced but considered a good practice.
  */
 const char *birthTopic = TOPIC_PREFIX "birth";
@@ -77,7 +77,7 @@ int brokerPort = 1883;
 
 // END MQTT CONFIG
 
-void brokerConneect(void);
+void brokerConnect(void);
 void gsmConnect(void);
 void incomingMessageHandler(MQTT::MessageData &messageData);
 
@@ -130,7 +130,7 @@ void setup()
     digitalWrite(GSM_POWER_KEY, 0);
 
     gsmConnect();
-    brokerConneect();
+    brokerConnect();
     delay(100);
     dht.begin();
     servo.attach(SERVO_PIN);
@@ -143,7 +143,7 @@ void loop()
     {
         // Optionally you can call the gsmConnect() function
         modem.restart();
-        brokerConneect();
+        brokerConnect();
     }
     else
     {
@@ -195,7 +195,7 @@ void gsmConnect(void)
     SerialMon.print(buffer);
 }
 
-void brokerConneect(void)
+void brokerConnect(void)
 {
     MQTT::Message mqttMessage;
     snprintf(buffer, sizeof(buffer), "Connecting to %s on port %i \r\n", brokerAddress, brokerPort);
