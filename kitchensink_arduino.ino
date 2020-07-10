@@ -30,7 +30,7 @@ const char pass[] = "none";
  *  The GSM module power is at PB15 and needs to be set HIGH for 3 seconds then LOW once
  */
 #define SerialMon Serial
-#define SerialAT Serial1
+#define SerialAT Serial2
 
 TinyGsm modem(SerialAT);
 TinyGsmClient tinyGSMClient(modem);
@@ -160,7 +160,7 @@ void gsmConnect(void)
 {
     sprintf(buffer, "Getting the modem ready \r\n");
     SerialMon.print(buffer);
-    modem.restart();
+    modem.init();
     String modemInfo = modem.getModemInfo();
     SerialMon.print("About the modem: ");
     SerialMon.println(modemInfo);
