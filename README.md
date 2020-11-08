@@ -1,5 +1,5 @@
 # Africa's Talking IoT: Kitchen sink Demo
-Arduino Companion for The kitchen sink Demo 👉🏿 https://github.com/africastalkingiotltd/kitchensink_web
+C++ Companion Code for The kitchen sink Demo 👉🏿 https://github.com/africastalkingiotltd/kitchensink_web
 
 ## Getting Started
 
