@@ -1,4 +1,4 @@
-# Africa's Talking IoT: Kitchen sink Demo - Arduino
+# Africa's Talking IoT: Kitchen sink Demo
 Arduino Companion for The kitchen sink Demo 👉🏿 https://github.com/africastalkingiotltd/kitchensink_web
 
 ## Getting Started
