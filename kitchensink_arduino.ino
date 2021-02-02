@@ -94,11 +94,11 @@ int returnCode = 0;
 
 #define TRIGGER_PIN PB10
 #define ECHO_PIN PB11
-#define DHT_PIN PB12
+#define DHT_PIN PB0
 #define LDR_PIN PB1
-#define SOIL_MOISTURE_PIN PB0
+#define SOIL_MOISTURE_PIN PA6
 #define LED_PIN PC13
-#define SERVO_PIN PB13
+#define SERVO_PIN PA7
 
 #define DHTTYPE DHT11
 
