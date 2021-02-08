@@ -20,6 +20,9 @@ const char apn[] = "iot.safaricom.com";
 const char user[] = "none";
 const char pass[] = "none";
 
+// This is for STM32Duino Core or PlatformIO, comment this out when using a different Core
+HardwareSerial Serial2(PA3, PA2);
+
 /**
  * @brief Setting up the UART and initializing the GSM Client
  * 
