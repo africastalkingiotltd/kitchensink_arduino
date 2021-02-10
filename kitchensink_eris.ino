@@ -1,9 +1,5 @@
 #define TINY_GSM_MODEM_SIM800
 
-#define WARN Serial.println
-
-#define MQTTCLIENT_QOS2 1
-
 #include "./include/config.h"
 
 #include <Countdown.h>
