@@ -86,6 +86,11 @@ void sendHumidity(void);
 void sendLightIntensity(void);
 void sendUltraSonicData(void);
 
+constexpr unsigned int str2int(const char *str, int h)
+{
+    return !str[h] ? 5381 : (str2int(str, h + 1) * 33) ^ str[h];
+}
+
 IPStack ipstack(tinyGSMClient);
 MQTT::Client<IPStack, Countdown, 128, 3> mqttClient = MQTT::Client<IPStack, Countdown, 128, 3>(ipstack);
 
@@ -146,14 +151,13 @@ void loop()
         modem.restart();
         brokerConnect();
     }
-    else
-    {
-        sendTemperature();
-        sendHumidity();
-        sendUltraSonicData();
-        sendLightIntensity();
-        mqttClient.yield(1000);
-    }
+    mqttClient.yield(1000);
+
+    sendTemperature();
+    sendHumidity();
+    sendUltraSonicData();
+    sendLightIntensity();
+    SerialMon.println("Done sending Data");
     delay(1500);
 }
 
@@ -327,38 +331,46 @@ void sendUltraSonicData(void)
 
 void incomingMessageHandlerServo(MQTT::MessageData &messageData)
 {
+    char cmd[10];
     MQTT::Message &message = messageData.message;
-    snprintf(buffer, sizeof(buffer), "%s", messageData.message.payload);
-    if (buffer == "open")
+    snprintf(cmd, sizeof(cmd), "%s", messageData.message.payload);
+    SerialMon.print(F("Incoming Servo Message: "));
+    SerialMon.println(cmd);
+    switch (str2int(cmd, 0))
     {
-        servo.write(180);
-    }
-    else if (buffer == "close")
-    {
+    case str2int("close", 0):
         servo.write(0);
-    }
-    else
-    {
+        break;
+    case str2int("open", 0):
+        servo.write(180);
+        break;
+    default:
         SerialMon.print("Unknown Servo Command: ");
-        SerialMon.println(buffer);
+        SerialMon.println(cmd);
+        break;
     }
+    memset((char *)message.payload, NULL, sizeof(cmd));
 }
 
 void incomingMessageHandlerLED(MQTT::MessageData &messageData)
 {
+    char cmd[10];
     MQTT::Message &message = messageData.message;
-    snprintf(buffer, sizeof(buffer), "%s", messageData.message.payload);
-    if (buffer == "on")
+    snprintf(cmd, sizeof(cmd), "%s", messageData.message.payload);
+    SerialMon.print(F("Incoming LED Message: "));
+    SerialMon.println(cmd);
+    switch (str2int(cmd, 0))
     {
+    case str2int("on", 0):
         digitalWrite(LED_PIN, 1);
-    }
-    else if (buffer == "off")
-    {
+        break;
+    case str2int("off", 0):
         digitalWrite(LED_PIN, 0);
-    }
-    else
-    {
+        break;
+    default:
         SerialMon.print("Unknown LED Command: ");
-        SerialMon.println(buffer);
+        SerialMon.println(cmd);
+        break;
     }
+    memset((char *)message.payload, NULL, sizeof(cmd));
 }
