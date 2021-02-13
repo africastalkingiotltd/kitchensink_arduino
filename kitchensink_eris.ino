@@ -31,10 +31,24 @@ HardwareSerial Serial2(PA3, PA2);
 #define SerialMon Serial
 #define SerialAT Serial2
 
-TinyGsm modem(SerialAT);
-TinyGsmClient tinyGSMClient(modem);
-
 #define GSM_POWER_KEY PB15
+
+// DEBUGGING: (un)Comment out this line if you do not want to see the AT Command stream from Serial 2
+//#define DUMP_AT_COMMANDS
+
+#define TINY_GSM_DEBUG SerialMon
+
+// Uses an extra library
+#ifdef DUMP_AT_COMMANDS
+#include <StreamDebugger.h>
+StreamDebugger debugger(SerialAT, SerialMon);
+TinyGsm modem(debugger);
+#else
+TinyGsm modem(SerialAT);
+#endif
+
+// END DEBUGGING CONF
+TinyGsmClient tinyGSMClient(modem);
 
 // END GSM CONFIG
 
@@ -76,8 +90,8 @@ int brokerPort = 1883;
 
 // END MQTT CONFIG
 
-void brokerConnect(void);
-void gsmConnect(void);
+bool brokerConnect(void);
+bool gsmConnect(void);
 void incomingMessageHandlerServo(MQTT::MessageData &messageData);
 void incomingMessageHandlerLED(MQTT::MessageData &messageData);
 
@@ -96,6 +110,8 @@ MQTT::Client<IPStack, Countdown, 128, 3> mqttClient = MQTT::Client<IPStack, Coun
 
 char buffer[100];
 int returnCode = 0;
+
+int modemConnAttemptsCount = 0;
 
 // Update these based on you preferred wiring
 #define TRIGGER_PIN PB10
@@ -119,7 +135,7 @@ void setup()
     delay(100);
     while (!SerialMon || !SerialAT)
     {
-        ;
+        ; // Serial Not working
     }
 
     pinMode(GSM_POWER_KEY, OUTPUT);
@@ -134,9 +150,15 @@ void setup()
     digitalWrite(GSM_POWER_KEY, 1);
     delay(3000);
     digitalWrite(GSM_POWER_KEY, 0);
+    // FIXME: Needs to be looked at 
+    if (gsmConnect() == true)
+    {
+        if(brokerConnect() == true)
+        {
+            SerialMon.println("SUCCESS Connected to the broker");
+        }
+    }
 
-    gsmConnect();
-    brokerConnect();
     delay(100);
     dht.begin();
     servo.attach(SERVO_PIN);
@@ -144,12 +166,21 @@ void setup()
 
 void loop()
 {
-    int isConnected = mqttClient.isConnected();
-    if (!isConnected)
+    if (!modem.isGprsConnected() || !mqttClient.isConnected())
     {
-        // Optionally you can call the gsmConnect() function
-        modem.restart();
-        brokerConnect();
+        if (gsmConnect()== false)
+        {
+            SerialMon.println("[ERROR] GPRS Reconnection failed. Trying again.");
+        }
+
+        // Let's reconnect to the broker
+
+        // Clean up connection???
+        mqttClient.disconnect();
+        if (brokerConnect() == true)
+        {
+            SerialMon.println("[ERROR] Failed to reconnnect to the broker. Trying again.");
+        }
     }
     mqttClient.yield(1000);
 
@@ -157,15 +188,28 @@ void loop()
     sendHumidity();
     sendUltraSonicData();
     sendLightIntensity();
-    SerialMon.println("Done sending Data");
+
     delay(1500);
 }
 
-void gsmConnect(void)
+bool gsmConnect(void)
 {
+    if (modemConnAttemptsCount > 0)
+    {
+        SerialMon.println("Modem reconnnection had been attempted earlier. Restarting");
+        // FIXME: We're doing this in another piece of C code, but I fully do not understand the implications of regularly switching on the power-key
+        digitalWrite(GSM_POWER_KEY, 1);
+        delay(3000); // Should we do this here?????
+        digitalWrite(GSM_POWER_KEY, 0);
+        modem.restart();
+    }
     sprintf(buffer, "Getting the modem ready \r\n");
     SerialMon.print(buffer);
-    modem.init();
+    if(!modem.init())
+    {
+        SerialMon.println("[ERROR]Unable to initialize modem.");
+        return false;
+    }
     String modemInfo = modem.getModemInfo();
     SerialMon.print("About the modem: ");
     SerialMon.println(modemInfo);
@@ -175,11 +219,8 @@ void gsmConnect(void)
     {
         sprintf(buffer, "\r\n Unable to initialize registration. Reset and try again.\r\n");
         SerialMon.print(buffer);
-        modem.restart();
-        while (true)
-        {
-            ;
-        }
+        modemConnAttemptsCount++;
+        return false; // Exit
     }
     sprintf(buffer, "GSM OK\r\n");
     SerialMon.print(buffer);
@@ -190,17 +231,17 @@ void gsmConnect(void)
     {
         sprintf(buffer, "Unable to connect to APN. Reset and try again \r\n");
         SerialMon.print(buffer);
-        while (true)
-        {
-            ;
-        }
+        modemConnAttemptsCount++;
+        return false; // Exit
     }
 
     sprintf(buffer, "GSM is Okay \r\n");
     SerialMon.print(buffer);
+    modemConnAttemptsCount = 0;
+    return true;
 }
 
-void brokerConnect(void)
+bool brokerConnect(void)
 {
     MQTT::Message mqttMessage;
     snprintf(buffer, sizeof(buffer), "Connecting to %s on port %i \r\n", brokerAddress, brokerPort);
@@ -210,17 +251,13 @@ void brokerConnect(void)
     {
         snprintf(buffer, sizeof(buffer), "Unable to connect to Broker TCP Port. \r\n");
         SerialMon.println(buffer);
-        while (true)
-        {
-            ;
-        }
+        return false; // Exit immediately
     }
     else
     {
         snprintf(buffer, sizeof(buffer), "Broker TCP port open \r\n");
         SerialMon.println(buffer);
     }
-    // delay(3000);
     MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
     data.MQTTVersion = 4;
     data.clientID.cstring = (char *)mqttDeviceID;
@@ -237,10 +274,7 @@ void brokerConnect(void)
     {
         snprintf(buffer, sizeof(buffer), "Error establishing connection session with  broker. Error Code %i. \r\n", returnCode);
         SerialMon.print(buffer);
-        while (true)
-        {
-            ;
-        }
+        return false; // Exit immediately
     }
     mqttMessage.qos = MQTT::QOS1;
     mqttMessage.retained = false;
@@ -255,23 +289,18 @@ void brokerConnect(void)
     {
         snprintf(buffer, sizeof(buffer), "Unable to subscribe to servo topic. Hanginng the process\r\n");
         SerialMon.print(buffer);
-        while (true)
-        {
-            ;
-        }
+        return false; // Exit immediately
     }
     returnCode = mqttClient.subscribe(ledTopic, MQTT::QOS1, incomingMessageHandlerLED);
     if (returnCode != 0)
     {
         snprintf(buffer, sizeof(buffer), "Unable to subscribe to LED topic. Hanging the process\n");
         SerialMon.print(buffer);
-        while (true)
-        {
-            ;
-        }
+        return false; // Exit immediately
     }
     snprintf(buffer, sizeof(buffer), "Successfully connected to the broker\n");
     SerialMon.println(buffer);
+    return true;
 }
 
 void publishMessage(char *payload, const char *topic)
@@ -279,6 +308,7 @@ void publishMessage(char *payload, const char *topic)
     MQTT::Message message;
     message.qos = MQTT::QOS1;
     message.payload = (void *)payload;
+    message.retained = 0;
     message.payloadlen = strlen(payload) + 1;
     returnCode = mqttClient.publish(topic, message);
     snprintf(buffer, sizeof(buffer), "%s topic publish return code %i \n", topic, returnCode);
