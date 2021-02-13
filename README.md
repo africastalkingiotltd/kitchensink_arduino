@@ -5,11 +5,13 @@ Arduino Companion Code for The kitchen sink Demo 👉🏿 https://github.com/afr
 
 ### Third Party Libraries
 
-| Library              | Function                           | Source                                                       |
-| -------------------- | ---------------------------------- | ------------------------------------------------------------ |
-| MQTT Client(Eclipse) | Handling MQTT Client Connection    | [Eclipse.org](https://www.eclipse.org/downloads/download.php?file=/paho/arduino_1.0.0.zip) |
-| Tiny GSM             | Handling GSM Module connection     | [TinyGSM](https://github.com/vshymanskyy/TinyGSM)            |
-| DHT                  | High level wrapper for DHT sensors | [Adafruit](https://github.com/adafruit/DHT-sensor-library)   |
+| Library                        | Function                                                  | Source                                                       |
+| ------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------ |
+| MQTT Client(Eclipse)           | Handling MQTT Client Connection                           | [Eclipse.org](https://www.eclipse.org/downloads/download.php?file=/paho/arduino_1.0.0.zip) |
+| Tiny GSM                       | Handling GSM Module connection                            | [TinyGSM](https://github.com/vshymanskyy/TinyGSM)            |
+| DHT                            | High level wrapper for DHT sensors                        | [Adafruit](https://github.com/adafruit/DHT-sensor-library)   |
+| Adafruit Unified Sensor Driver | DHT Lib dependency                                        | [Adafruit](https://github.com/adafruit/Adafruit_Sensor)      |
+| StreamDebugger                 | Easier debugging of Serial-based communication on Arduino | [StreamDebugger](https://github.com/vshymanskyy/StreamDebugger) |
 
 ### Configure
 
