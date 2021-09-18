@@ -17,7 +17,7 @@ const char user[] = "none";
 const char pass[] = "none";
 
 // This is for STM32Duino Core or PlatformIO, comment this out when using a different Core
-HardwareSerial Serial2(PA3, PA2);
+HardwareSerial GSMSerial(PA3, PA2);
 
 /**
  * @brief Setting up the UART and initializing the GSM Client
@@ -29,7 +29,7 @@ HardwareSerial Serial2(PA3, PA2);
  *  The GSM module power is at PB15 and needs to be set HIGH for 3 seconds then LOW once
  */
 #define SerialMon Serial
-#define SerialAT Serial2
+#define SerialAT GSMSerial
 
 #define GSM_POWER_KEY PB15
 
@@ -92,6 +92,7 @@ int brokerPort = 1883;
 
 bool brokerConnect(void);
 bool gsmConnect(void);
+void getModemData(void);
 void incomingMessageHandlerServo(MQTT::MessageData &messageData);
 void incomingMessageHandlerLED(MQTT::MessageData &messageData);
 
@@ -129,6 +130,8 @@ Servo servo;
 
 void setup()
 {
+    SerialMon.setRx(PA10);
+    SerialMon.setTx(PA9);
     SerialMon.begin(115200);
     delay(100);
     SerialAT.begin(115200);
@@ -150,14 +153,6 @@ void setup()
     digitalWrite(GSM_POWER_KEY, 1);
     delay(3000);
     digitalWrite(GSM_POWER_KEY, 0);
-    // FIXME: Needs to be looked at 
-    if (gsmConnect() == true)
-    {
-        if(brokerConnect() == true)
-        {
-            SerialMon.println("SUCCESS Connected to the broker");
-        }
-    }
 
     delay(100);
     dht.begin();
@@ -166,6 +161,10 @@ void setup()
 
 void loop()
 {
+    SerialMon.println("Starting up");
+    getModemData();
+    sprintf(buffer, "Is network connected(0 False / 1 True)? : %i ", modem.isNetworkConnected());
+    SerialMon.println(buffer);
     if (!modem.isGprsConnected() || !mqttClient.isConnected())
     {
         if (gsmConnect()== false)
@@ -192,6 +191,28 @@ void loop()
     delay(1500);
 }
 
+void getModemData(void)
+{
+    String name = modem.getModemInfo();
+    SerialMon.print("Modem Info: ");
+    SerialMon.println(name);
+    String info = modem.getModemInfo();
+    SerialMon.print("Modem Name: ");
+    SerialMon.println(info);
+    String ccid = modem.getSimCCID();
+    SerialMon.print("CCID: ");
+    SerialMon.println(ccid);
+    String imei = modem.getIMEI();
+    SerialMon.print("IMEI: ");
+    SerialMon.println(imei);
+    String imsi = modem.getIMSI();
+    SerialMon.print("IMSI: ");
+    SerialMon.println(imsi);
+    String cop = modem.getOperator();
+    SerialMon.print("Operator: ");
+    SerialMon.println(cop);
+}
+
 bool gsmConnect(void)
 {
     if (modemConnAttemptsCount > 0)
@@ -205,14 +226,7 @@ bool gsmConnect(void)
     }
     sprintf(buffer, "Getting the modem ready \r\n");
     SerialMon.print(buffer);
-    if(!modem.init())
-    {
-        SerialMon.println("[ERROR]Unable to initialize modem.");
-        return false;
-    }
-    String modemInfo = modem.getModemInfo();
-    SerialMon.print("About the modem: ");
-    SerialMon.println(modemInfo);
+    modem.init();
     sprintf(buffer, "Initializing GSM network registration...\r\n");
     SerialMon.print(buffer);
     if (!modem.waitForNetwork())
